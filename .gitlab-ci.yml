@@ -1,0 +1,44 @@
+image: node:8.4.0
+
+before_script:
+  - node -v
+  - npm -v
+  - npm i -g typescript grunt
+  - npm install
+
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: build
+  script:
+    - npm run tslint
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+
+test:
+  stage: test
+  dependencies:
+    - build
+  script:
+    - npm run test
+  artifacts:
+    paths:
+      - coverage/lcov-report/
+
+pages:
+  stage: deploy
+  dependencies:
+    - test
+  script:
+    - mv coverage/lcov-report/ public/
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
+  only:
+    - master

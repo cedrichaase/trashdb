@@ -1,0 +1,64 @@
+{
+  "name": "trashdb",
+  "version": "1.0.0",
+  "description": "A nodejs/express application template",
+  "repository": "git@gitlab.com:cedrichaase/express-template.git",
+  "main": "app.js",
+  "dependencies": {
+    "@types/node": "^8.0.24",
+    "awilix": "^2.7.0",
+    "body-parser": "^1.18.2",
+    "diskusage": "^0.2.3",
+    "du-sync": "0.0.1",
+    "express": "^4.15.4",
+    "fakerator": "^0.3.0",
+    "jsonfile": "^4.0.0",
+    "minimist": "^1.2.0",
+    "request": "^2.81.0",
+    "request-promise": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/mocha": "^2.2.42",
+    "grunt": "^1.0.1",
+    "grunt-contrib-clean": "^1.1.0",
+    "grunt-contrib-watch": "^1.0.0",
+    "grunt-express-server": "^0.5.3",
+    "grunt-mocha-istanbul": "^5.0.2",
+    "grunt-mocha-test": "^0.13.2",
+    "grunt-npm-install": "^0.3.1",
+    "grunt-ts": "^6.0.0-beta.16",
+    "grunt-tslint": "^5.0.1",
+    "istanbul": "^0.4.5",
+    "mocha": "^3.5.0",
+    "remap-istanbul": "^0.9.5",
+    "source-map-support": "^0.4.17",
+    "ts-node": "^3.3.0",
+    "tslint": "^5.7.0",
+    "typescript": "^2.5.2"
+  },
+  "scripts": {
+    "watch": "grunt watch",
+    "clean-install": "rm -rf node_modules && npm install",
+    "ci": "npm run clean-install && grunt ci",
+    "setup": "npm i && grunt build",
+    "build": "grunt build:clean",
+    "tslint": "grunt tslint:check",
+    "test": "grunt test",
+    "precommit": "grunt precommit"
+  },
+  "nyc": {
+    "extension": [
+      ".ts",
+      ".tsx"
+    ],
+    "exclude": [
+      "**/*.d.ts"
+    ],
+    "reporter": [
+      "html"
+    ],
+    "all": true
+  },
+  "author": "Cedric Haase",
+  "license": "ISC"
+}

@@ -1,0 +1,10 @@
+*.js
+*.js.map
+!test/**/*.js
+!Gruntfile.js
+node_modules/
+.idea/
+dist/
+.tscache/
+.nyc_output
+coverage
