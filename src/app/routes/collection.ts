@@ -11,6 +11,10 @@ module.exports = app => {
         return req.collectionAction.list(req, res);
     });
 
+    app.post("/collections", (req, res) => {
+        return req.collectionAction.create(req, res);
+    });
+
     app.get("/collections/:name", (req, res) => {
         return req.collectionAction.find(req, res);
     });

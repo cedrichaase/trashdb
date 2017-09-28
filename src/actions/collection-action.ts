@@ -57,4 +57,21 @@ export class CollectionAction {
 
         return res.status(200).send({meta});
     }
+
+    // creates a new collection
+    public create(req, res) {
+        const name = req.body["name"];
+        const shardKey = req.body["shardKey"];
+
+        if(!name || !shardKey) {
+            return res.status(400).send({error: "Insufficient data - name and shardKey required"});
+        }
+
+        try {
+            const content = this.repo.createCollection(name, shardKey);
+            return res.status(200).send({content});
+        } catch (error) {
+            return res.status(500).send({error});
+        }
+    }
 }

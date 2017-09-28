@@ -1,23 +1,52 @@
 const jsonfile = require("jsonfile");
 const fs = require("fs");
+const _ = require("lodash");
+
+const leftpad = (str, ans) => {
+    const pad = "0".repeat(ans);
+    return pad.substring(0, pad.length - str.length) + str;
+};
+
+const sha1 = (input) => {
+    return require("crypto")
+        .createHash("sha1")
+        .update(JSON.stringify(input))
+        .digest("hex");
+};
+
+const longestCommonPrefix = (str1, str2) => {
+    let newStr = "";
+
+    for (let i = 0; i < Math.min(str1.length, str2.length); i++) {
+        if (str1[i] !== str2[i]) {
+            break;
+        }
+        newStr += str1[i];
+    }
+
+    return newStr;
+};
+
+const hex2bin = (hex) => {
+    return leftpad(parseInt(hex, 16).toString(2), 160);
+};
+
+interface ICollectionMetaData {
+    name: string;
+    shardKey: string;
+    shardKeyPrefix: string;
+}
+
+interface ICollectionData {
+    documents: any[];
+    meta: ICollectionMetaData;
+}
 
 export class Collection {
     private file: string;
-    private path: string;
-    private shard: string;
 
-    constructor({name, environment}) {
-        this.shard = environment.shard;
-        this.path = `${environment.db}/${this.shard}`;
-        this.file = `${this.path}/${name}.json`;
-
-        if (!fs.existsSync(this.path)) {
-            fs.mkdirSync(this.file.split("/").slice(0, -1).join("/"));
-        }
-
-        if (!fs.existsSync(this.file)) {
-            jsonfile.writeFileSync(this.file, {documents: []}, {spaces: 2});
-        }
+    constructor({file}) {
+        this.file = file;
     }
 
     private matches(document, criteria) {
@@ -46,7 +75,7 @@ export class Collection {
         return document;
     }
 
-    private getNextId() {
+    private getNextNumericId() {
         let highest = 0;
         for (const document of this.documents()) {
             const id = parseInt(document.id.split(":")[1], 16);
@@ -59,11 +88,64 @@ export class Collection {
         return (highest + 1).toString(16);
     }
 
+    private validateShardKeyValue(shardKeyValue) {
+        const shardKeyValueBin = hex2bin(shardKeyValue);
+        const collection = this.getCollection();
+
+        console.log(collection);
+
+        let shardKeyPrefix = _.clone(collection.meta.shardKeyPrefix || "");
+
+        if (!shardKeyPrefix) {
+            console.log("there is not shard key prefix in meta");
+            shardKeyPrefix = shardKeyValueBin;
+        }
+
+        if (!shardKeyValueBin.startsWith(shardKeyPrefix)) {
+            console.log("need to update shard key prefix");
+
+            const newPrefix = longestCommonPrefix(shardKeyValueBin, shardKeyPrefix);
+
+            if (!newPrefix) {
+                throw new Error(`Document's shard key has no common prefix with ${shardKeyPrefix}!`);
+            }
+
+            shardKeyPrefix = newPrefix;
+        }
+
+        // save if prefix was updated
+        if (!collection.meta.shardKeyPrefix || shardKeyPrefix !== collection.meta.shardKeyPrefix) {
+            console.log("do update");
+            collection.meta["shardKeyPrefix"] = shardKeyPrefix;
+
+            console.log(collection);
+
+            jsonfile.writeFileSync(this.file, collection, {spaces: 2});
+        }
+    }
+
+    private getFullId(document) {
+        const meta = this.getCollection().meta;
+
+        const shardKey = meta.shardKey;
+
+        if (!shardKey) {
+            throw new Error(`Document ${JSON.stringify(document)} does not have shardKey ${shardKey}`);
+        }
+
+        const shardKeyValue = sha1(document[shardKey]);
+        this.validateShardKeyValue(shardKeyValue);
+
+        const numericalId = this.getNextNumericId();
+
+        return `${shardKeyValue}:${numericalId}`;
+    }
+
     private documents() {
         return this.getCollection().documents;
     }
 
-    private getCollection() {
+    private getCollection(): ICollectionData {
         return jsonfile.readFileSync(this.file);
     }
 
@@ -88,10 +170,11 @@ export class Collection {
     }
 
     public insert(document) {
-        const collection = this.getCollection();
+        document.id = this.getFullId(document);
 
-        document.id = `${this.shard}:${this.getNextId()}`;
+        const collection = this.getCollection();
         collection.documents.push(document);
+
         jsonfile.writeFileSync(this.file, collection, {spaces: 2});
 
         return document;
@@ -110,6 +193,4 @@ export class Collection {
 
         jsonfile.writeFileSync(this.file, collection, {spaces: 2});
     }
-
-
 }
