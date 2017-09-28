@@ -63,14 +63,15 @@ export class CollectionAction {
         const name = req.body["name"];
         const shardKey = req.body["shardKey"];
 
-        if(!name || !shardKey) {
+        if (!name || !shardKey) {
             return res.status(400).send({error: "Insufficient data - name and shardKey required"});
         }
 
         try {
-            const content = this.repo.createCollection(name, shardKey);
+            const content = this.repo.create(name, shardKey);
             return res.status(200).send({content});
         } catch (error) {
+            console.error(error);
             return res.status(500).send({error});
         }
     }

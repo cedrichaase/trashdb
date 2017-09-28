@@ -1,5 +1,3 @@
-const jsonfile = require("jsonfile");
-const fs = require("fs");
 const _ = require("lodash");
 
 const leftpad = (str, ans) => {
@@ -31,23 +29,8 @@ const hex2bin = (hex) => {
     return leftpad(parseInt(hex, 16).toString(2), 160);
 };
 
-interface ICollectionMetaData {
-    name: string;
-    shardKey: string;
-    shardKeyPrefix: string;
-}
-
-interface ICollectionData {
-    documents: any[];
-    meta: ICollectionMetaData;
-}
-
 export class Collection {
-    private file: string;
-
-    constructor({file}) {
-        this.file = file;
-    }
+    constructor(private store: CollectionStore) {}
 
     private matches(document, criteria) {
         for (const key in criteria) {
@@ -76,8 +59,10 @@ export class Collection {
     }
 
     private getNextNumericId() {
+        const documents = this.store.getDocuments();
+
         let highest = 0;
-        for (const document of this.documents()) {
+        for (const document of documents) {
             const id = parseInt(document.id.split(":")[1], 16);
 
             if (id > highest) {
@@ -90,11 +75,9 @@ export class Collection {
 
     private validateShardKeyValue(shardKeyValue) {
         const shardKeyValueBin = hex2bin(shardKeyValue);
-        const collection = this.getCollection();
+        const metaData = this.store.getMetaData();
 
-        console.log(collection);
-
-        let shardKeyPrefix = _.clone(collection.meta.shardKeyPrefix || "");
+        let shardKeyPrefix = _.clone(metaData.shardKeyPrefix || "");
 
         if (!shardKeyPrefix) {
             console.log("there is not shard key prefix in meta");
@@ -114,20 +97,16 @@ export class Collection {
         }
 
         // save if prefix was updated
-        if (!collection.meta.shardKeyPrefix || shardKeyPrefix !== collection.meta.shardKeyPrefix) {
-            console.log("do update");
-            collection.meta["shardKeyPrefix"] = shardKeyPrefix;
-
-            console.log(collection);
-
-            jsonfile.writeFileSync(this.file, collection, {spaces: 2});
+        if (shardKeyPrefix !== metaData.shardKeyPrefix) {
+            metaData["shardKeyPrefix"] = shardKeyPrefix;
+            this.store.persistMetaData(metaData);
         }
     }
 
     private getFullId(document) {
-        const meta = this.getCollection().meta;
+        const metaData = this.store.getMetaData();
 
-        const shardKey = meta.shardKey;
+        const shardKey = metaData.shardKey;
 
         if (!shardKey) {
             throw new Error(`Document ${JSON.stringify(document)} does not have shardKey ${shardKey}`);
@@ -141,30 +120,22 @@ export class Collection {
         return `${shardKeyValue}:${numericalId}`;
     }
 
-    private documents() {
-        return this.getCollection().documents;
-    }
-
-    private getCollection(): ICollectionData {
-        return jsonfile.readFileSync(this.file);
-    }
-
     public find(criteria) {
-        return this.documents().filter(document => this.matches(document, criteria));
+        return this.store.getDocuments().filter(document => this.matches(document, criteria));
     }
 
     public update(criteria, updateArgs) {
-        const collection = this.getCollection();
+        const documents = this.store.getDocuments();
         const updated = [];
 
-        collection.documents.forEach(document => {
+        documents.forEach(document => {
             if (this.matches(document, criteria)) {
                 document = this.updateDocument(document, updateArgs);
                 updated.push(document);
             }
         });
 
-        jsonfile.writeFileSync(this.file, collection, {spaces: 2});
+        this.store.persistDocuments(documents);
 
         return updated;
     }
@@ -172,25 +143,21 @@ export class Collection {
     public insert(document) {
         document.id = this.getFullId(document);
 
-        const collection = this.getCollection();
-        collection.documents.push(document);
+        const documents = this.store.getDocuments();
+        documents.push(document);
 
-        jsonfile.writeFileSync(this.file, collection, {spaces: 2});
+        this.store.persistDocuments(documents);
 
         return document;
     }
 
     public delete(criteria) {
-        const collection = this.getCollection();
+        let documents = this.store.getDocuments();
 
-        console.log(collection.documents);
-
-        collection.documents = collection.documents.filter(document => {
+        documents = documents.filter(document => {
             return !this.matches(document, criteria);
         });
 
-        console.log(collection.documents);
-
-        jsonfile.writeFileSync(this.file, collection, {spaces: 2});
+        this.store.persistDocuments(documents);
     }
 }
