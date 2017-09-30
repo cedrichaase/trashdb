@@ -90,7 +90,7 @@ export class Collection {
             const newPrefix = longestCommonPrefix(shardKeyValueBin, shardKeyPrefix);
 
             if (!newPrefix) {
-                throw new Error(`Document's shard key has no common prefix with ${shardKeyPrefix}!`);
+                throw new Error(`Document shard key ${shardKeyValueBin} (len ${shardKeyValueBin.length}) has no common prefix with ${shardKeyPrefix} (len ${shardKeyPrefix.length})!`);
             }
 
             shardKeyPrefix = newPrefix;
