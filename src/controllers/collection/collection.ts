@@ -1,3 +1,5 @@
+import { CollectionStore } from "./interfaces";
+
 const _ = require("lodash");
 
 const leftpad = (str, ans) => {
@@ -58,8 +60,8 @@ export class Collection {
         return document;
     }
 
-    private getNextNumericId() {
-        const documents = this.store.getDocuments();
+    private async getNextNumericId() {
+        const documents = await this.store.getDocuments();
 
         let highest = 0;
         for (const document of documents) {
@@ -73,9 +75,9 @@ export class Collection {
         return (highest + 1).toString(16);
     }
 
-    private validateShardKeyValue(shardKeyValue) {
+    private async validateShardKeyValue(shardKeyValue) {
         const shardKeyValueBin = hex2bin(shardKeyValue);
-        const metaData = this.store.getMetaData();
+        const metaData = await this.store.getMetaData();
 
         let shardKeyPrefix = _.clone(metaData.shardKeyPrefix || "");
 
@@ -103,8 +105,8 @@ export class Collection {
         }
     }
 
-    private getFullId(document) {
-        const metaData = this.store.getMetaData();
+    private async getFullId(document) {
+        const metaData = await this.store.getMetaData();
 
         const shardKey = metaData.shardKey;
 
@@ -115,17 +117,18 @@ export class Collection {
         const shardKeyValue = sha1(document[shardKey]);
         this.validateShardKeyValue(shardKeyValue);
 
-        const numericalId = this.getNextNumericId();
+        const numericalId = await this.getNextNumericId();
 
         return `${shardKeyValue}:${numericalId}`;
     }
 
-    public find(criteria) {
-        return this.store.getDocuments().filter(document => this.matches(document, criteria));
+    public async find(criteria) {
+        const documents = await this.store.getDocuments();
+        return documents.filter(document => this.matches(document, criteria));
     }
 
-    public update(criteria, updateArgs) {
-        const documents = this.store.getDocuments();
+    public async update(criteria, updateArgs) {
+        const documents = await this.store.getDocuments();
         const updated = [];
 
         documents.forEach(document => {
@@ -140,10 +143,11 @@ export class Collection {
         return updated;
     }
 
-    public insert(document) {
-        document.id = this.getFullId(document);
+    public async insert(document) {
+        document.id = await this.getFullId(document);
+        console.log(document);
 
-        const documents = this.store.getDocuments();
+        const documents = await this.store.getDocuments();
         documents.push(document);
 
         this.store.persistDocuments(documents);
@@ -151,8 +155,8 @@ export class Collection {
         return document;
     }
 
-    public delete(criteria) {
-        let documents = this.store.getDocuments();
+    public async delete(criteria) {
+        let documents = await this.store.getDocuments();
 
         documents = documents.filter(document => {
             return !this.matches(document, criteria);

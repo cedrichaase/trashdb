@@ -7,29 +7,30 @@ export class CollectionAction {
         this.repo = collectionRepository;
     }
 
-    public list(req, res) {
+    public async list(req, res) {
         let collections = this.repo.list();
-        const meta = this.repo.getMeta();
+        const meta = await this.repo.getMeta();
 
         (req.body["action"] === "count") && (collections = collections.length);
 
         return res.status(200).send({collections, meta});
     }
 
-    public countCollections(req, res) {
-        return res.status(200).send(this.repo.list().length);
+    public async countCollections(req, res) {
+        const list = await this.repo.list();
+        return res.status(200).send(list.length);
     }
 
-    public find(req, res) {
+    public async find(req, res) {
         const collection = this.repo.get(req.params["name"]);
-        const documents = collection.find(req.body["criteria"]);
+        const documents = await collection.find(req.body["criteria"]);
         return res.status(200).send({documents});
     }
 
-    public insert(req, res) {
+    public async insert(req, res) {
         const collection = this.repo.get(req.params["name"]);
 
-        const document = collection.insert(req.body["document"]);
+        const document = await collection.insert(req.body["document"]);
 
         return res.status(201).send({document});
     }
@@ -50,16 +51,16 @@ export class CollectionAction {
         return res.status(204).send();
     }
 
-    public meta(req, res) {
+    public async meta(req, res) {
         const collection = this.repo.get(req.params["name"]);
 
-        const meta = this.repo.getMeta();
+        const meta = await this.repo.getMeta();
 
         return res.status(200).send({meta});
     }
 
     // creates a new collection
-    public create(req, res) {
+    public async create(req, res) {
         const name = req.body["name"];
         const shardKey = req.body["shardKey"];
 
@@ -68,7 +69,7 @@ export class CollectionAction {
         }
 
         try {
-            const content = this.repo.create(name, shardKey);
+            const content = await this.repo.create(name, shardKey);
             return res.status(200).send({content});
         } catch (error) {
             console.error(error);

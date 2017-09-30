@@ -1,18 +1,18 @@
-interface CollectionMetaData {
+export interface CollectionMetaData {
     name: string;
     shardKey: string;
     shardKeyPrefix?: string;
 }
 
-interface CollectionData {
+export interface CollectionData {
     documents: any[];
     meta: CollectionMetaData;
 }
 
-interface CollectionStore {
-    create: (shardKey: string) => CollectionData;
-    getDocuments: () => any[];
-    getMetaData: () => CollectionMetaData;
+export interface CollectionStore {
+    create: (shardKey: string) => Promise<CollectionData>;
+    getDocuments: () => Promise<any[]>;
+    getMetaData: () => Promise<CollectionMetaData>;
     persistDocuments: (documents: any[]) => void;
     persistMetaData: (metaData: CollectionMetaData) => void;
     flush: () => void;

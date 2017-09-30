@@ -1,5 +1,16 @@
+import { CollectionData, CollectionMetaData, CollectionStore } from "./interfaces";
 const jsonfile = require("jsonfile");
 const fs = require("fs");
+const util = require("util");
+
+const fsPromise = {
+    exists: util.promisify(fs.exists)
+};
+
+const jsonfilePromise = {
+    readFile: util.promisify(jsonfile.readFile),
+    writeFile: util.promisify(jsonfile.writeFile)
+};
 
 export class FilesystemStore implements CollectionStore {
     private filePath: string;
@@ -8,14 +19,14 @@ export class FilesystemStore implements CollectionStore {
         this.filePath = `${dbPath}/${name}.json`;
     }
 
-    public create(shardKey: string) {
+    public async create(shardKey: string): Promise<CollectionData> {
         const dir = this.filePath.split("/").slice(0, -1).join("/");
 
-        if (!fs.existsSync(dir)) {
+        if (!(await fsPromise.exists(dir))) {
             fs.mkdirSync(dir);
         }
 
-        if (fs.existsSync(this.filePath)) {
+        if (await fsPromise.exists(this.filePath)) {
             throw new Error(`There is already a collection named ${this.name}`);
         }
 
@@ -33,22 +44,24 @@ export class FilesystemStore implements CollectionStore {
         return content;
     }
 
-    public getDocuments(): any[] {
-        return this.readCollection().documents;
+    public async getDocuments(): Promise<any[]> {
+        const collection = await this.readCollection();
+        return collection.documents;
     }
 
-    public getMetaData(): CollectionMetaData {
-        return this.readCollection().meta;
+    public async getMetaData(): Promise<CollectionMetaData> {
+        const collection = await this.readCollection();
+        return collection.meta;
     }
 
-    public persistDocuments(documents) {
-        const collection = this.readCollection();
+    public async persistDocuments(documents) {
+        const collection = await this.readCollection();
         collection.documents = documents;
         this.persistCollection(collection);
     }
 
-    public persistMetaData(metaData: CollectionMetaData) {
-        const collection = this.readCollection();
+    public async persistMetaData(metaData: CollectionMetaData) {
+        const collection = await this.readCollection();
         collection.meta = metaData;
         this.persistCollection(collection);
     }
@@ -57,11 +70,11 @@ export class FilesystemStore implements CollectionStore {
         return;
     }
 
-    private readCollection(): CollectionData {
-        return jsonfile.readFileSync(this.filePath);
+    private readCollection(): Promise<CollectionData> {
+        return jsonfilePromise.readFile(this.filePath);
     }
 
     private persistCollection(collection: CollectionData) {
-        jsonfile.writeFileSync(this.filePath, collection, {spaces: 2});
+        jsonfilePromise.writeFile(this.filePath, collection, {spaces: 2});
     }
 }
