@@ -1,18 +1,12 @@
-# Express Template
+# TrashDB
 
-[![pipeline status](https://gitlab.com/cedrichaase/express-template/badges/master/pipeline.svg)](https://gitlab.com/cedrichaase/express-template/commits/master) [![coverage report](https://gitlab.com/cedrichaase/express-template/badges/master/coverage.svg)](https://gitlab.com/cedrichaase/express-template/commits/master)
+A quick-and-dirty implementation of a "NoSQL" database for education purposes,
+created to convey the concept of sharding.
+Inspired by CouchDB and MongoDB, TrashDB stores and retrieves arbitrary data from plain
+text JSON files and exposes the data via a simple REST interface.
 
-
-A template for node.js/express applications written in TypeScript
-
-## Features
-
-* `TypeScript`
-* `tslint`
-* e2e- and unit tests with `mocha`
-* `gitlab-ci`
-* [code coverage](https://cedrichaase.gitlab.io/express-template) with `istanbul` and `gitlab-pages`
-
+The name TrashDB stems from the fact that retrieving data from it is about as efficient
+as manually searching a trash bin for a crumpled up piece of paper with the information on it.
 
 ## Setup
 
@@ -21,7 +15,7 @@ $ npm install -g grunt-cli
 $ npm install
 ```
 
-## Usage
+## Development
 
 During development, use `npm run watch` to keep transpiling,
 linting and restarting your express app whenever a file is saved.
